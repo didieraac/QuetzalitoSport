@@ -69,3 +69,10 @@ jobs:
           sed -n '/^\.method public final onCreate(Landroid\/os\/Bundle;)V/,/^\.end method/p' decoded/smali/com/dhapps/quetzalsport/WelcomeActivity.smali | tail -135
           echo "===== SPLASH WELCOME ROUTES ====="
           grep -Rn -B18 -A15 'Lcom/dhapps/quetzalsport/WelcomeActivity;' decoded/smali/n1/g1.smali decoded/smali/n1/l.smali decoded/smali/n1/k.smali decoded/smali/n1/f1.smali decoded/smali/n1/o0.smali | head -190 || true
+
+          echo "===== NUMERICOS DE BOTONES ====="
+          grep -E 'name="btnEnter"|name="btnWebApp"|name="rvCanales"|name="viewCanales"' decoded/res/values/public.xml || true
+          echo "===== WELCOME ONCREATE BOTONES ====="
+          sed -n '/^\.method public final onCreate(Landroid\/os\/Bundle;)V/,/^\.end method/p' decoded/smali/com/dhapps/quetzalsport/WelcomeActivity.smali | sed -n '105,350p'
+          echo "===== N1 ENTER CLICK HANDLER ====="
+          grep -n -B10 -A45 'Lcom/dhapps/quetzalsport/MainActivity;' decoded/smali/n1/g1.smali decoded/smali/n1/l.smali decoded/smali/n1/k.smali decoded/smali/n1/f1.smali decoded/smali/n1/o0.smali | head -230 || true
