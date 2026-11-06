@@ -29,9 +29,6 @@ jobs:
       - name: Aplicar parche V5 y verificar DEX
         run: python3 tools/patch.py original.apk unsigned.apk
 
-      - name: Preparar herramientas de Android
-        uses: android-actions/setup-android@v3
-
       - name: Instalar herramientas de firma
         run: sdkmanager "build-tools;35.0.0"
 
