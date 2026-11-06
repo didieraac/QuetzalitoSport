@@ -1,4 +1,4 @@
-name: Quetzalito Sport V6 - APK experimental
+name: Quetzalito Sport V7 - APK experimental
 
 on:
   push:
@@ -68,10 +68,10 @@ jobs:
           "$TOOLS/apksigner" sign --ks signing.jks --ks-key-alias qsport \
             --ks-pass "pass:$PASS" --key-pass "pass:$PASS" \
             --v1-signing-enabled true --v2-signing-enabled true \
-            --out QuetzalitoSport_V6_Prueba.apk aligned.apk
-          "$TOOLS/apksigner" verify --verbose --print-certs QuetzalitoSport_V6_Prueba.apk
-          unzip -t QuetzalitoSport_V6_Prueba.apk | tail -1
-          sha256sum QuetzalitoSport_V6_Prueba.apk
+            --out QuetzalitoSport_V7_Prueba.apk aligned.apk
+          "$TOOLS/apksigner" verify --verbose --print-certs QuetzalitoSport_V7_Prueba.apk
+          unzip -t QuetzalitoSport_V7_Prueba.apk | tail -1
+          sha256sum QuetzalitoSport_V7_Prueba.apk
 
       - name: Guardar APK también en rama main para enlace RAW
         shell: bash
@@ -79,22 +79,22 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add QuetzalitoSport_V6_Prueba.apk
+          git add QuetzalitoSport_V7_Prueba.apk
           if ! git diff --staged --quiet; then
-            git commit -m "Publicar APK V6 descargable desde RAW"
+            git commit -m "Publicar APK V7 descargable desde RAW"
             git push origin HEAD:main
           fi
 
-      - name: Publicar APK V6 en Releases
+      - name: Publicar APK V7 en Releases
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if gh release view v6-experimental >/dev/null 2>&1; then
-            gh release upload v6-experimental QuetzalitoSport_V6_Prueba.apk --clobber
+          if gh release view v7-experimental >/dev/null 2>&1; then
+            gh release upload v7-experimental QuetzalitoSport_V7_Prueba.apk --clobber
           else
-            gh release create v6-experimental QuetzalitoSport_V6_Prueba.apk \
-              --title "Quetzalito Sport V6 - prueba de arranque" \
-              --notes "Se corrige el error Out-of-order string_ids del DEX de la V5; se mantiene la huella de la firma actualizada. Aún requiere prueba real de inicio y canales en Android. Respalda los datos antes de instalar."
+            gh release create v7-experimental QuetzalitoSport_V7_Prueba.apk \
+              --title "Quetzalito Sport V7 - prueba de arranque" \
+              --notes "Se corrige la V6: se abre directamente el Intent del canal, sin ejecutar la pestaña publicitaria de omg10.com. Verificada firma y estructura del APK, pero el inicio y la reproducción siguen pendientes de prueba real en Android."
           fi
