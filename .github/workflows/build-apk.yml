@@ -73,6 +73,18 @@ jobs:
           unzip -t QuetzalitoSport_V6_Prueba.apk | tail -1
           sha256sum QuetzalitoSport_V6_Prueba.apk
 
+      - name: Guardar APK también en rama main para enlace RAW
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add QuetzalitoSport_V6_Prueba.apk
+          if ! git diff --staged --quiet; then
+            git commit -m "Publicar APK V6 descargable desde RAW"
+            git push origin HEAD:main
+          fi
+
       - name: Publicar APK V6 en Releases
         shell: bash
         env:
