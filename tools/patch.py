@@ -35,8 +35,11 @@ def patch_dex(data, cert_sha256):
     if not b"30" < cert_sha256 < b"4":
         raise RuntimeError("La huella no mantiene el orden DEX requerido")
     buf = bytearray(data)
-    replace_at(buf, 1282636, bytes.fromhex("1a"), bytes.fromhex("0e"))
-    replace_at(buf, 1282638, bytes.fromhex("6468"), bytes.fromhex("0000"))
+    # V7: no cancelar el método entero: su último paso abre el canal original.
+    # Al entrar: v8=Context, v9=Intent. Ejecutar Context.startActivity(Intent)
+    # (invoke-virtual method@0x0289) y devolver, sin abrir la URL publicitaria.
+    replace_at(buf, 1282636, bytes.fromhex("1a00646812011212"),
+               bytes.fromhex("6e20890298000e00"))
     replace_at(buf, CERT_STRING_OFFSET, ORIGINAL_CERT_SHA256, cert_sha256)
     # Reparar ambos checksums obligatorios del formato DEX.
     buf[12:32] = hashlib.sha1(buf[32:]).digest()
