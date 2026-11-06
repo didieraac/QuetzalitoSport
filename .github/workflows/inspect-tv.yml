@@ -60,3 +60,12 @@ jobs:
           sed -n '1,135p' decoded/res/layout/activity_welcome.xml
           echo "===== SPLASH ACTIVITY UI ====="
           sed -n '1,100p' decoded/res/layout/activity_splash.xml
+
+          echo "===== WELCOME METODOS b c d ====="
+          sed -n '/^\.method public final b()V/,/^\.end method/p' decoded/smali/com/dhapps/quetzalsport/WelcomeActivity.smali | head -220
+          sed -n '/^\.method public final c()Z/,/^\.end method/p' decoded/smali/com/dhapps/quetzalsport/WelcomeActivity.smali | head -200
+          sed -n '/^\.method public final d()V/,/^\.end method/p' decoded/smali/com/dhapps/quetzalsport/WelcomeActivity.smali | head -190
+          echo "===== WELCOME onCreate FINAL ====="
+          sed -n '/^\.method public final onCreate(Landroid\/os\/Bundle;)V/,/^\.end method/p' decoded/smali/com/dhapps/quetzalsport/WelcomeActivity.smali | tail -135
+          echo "===== SPLASH WELCOME ROUTES ====="
+          grep -Rn -B18 -A15 'Lcom/dhapps/quetzalsport/WelcomeActivity;' decoded/smali/n1/g1.smali decoded/smali/n1/l.smali decoded/smali/n1/k.smali decoded/smali/n1/f1.smali decoded/smali/n1/o0.smali | head -190 || true
