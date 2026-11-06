@@ -29,8 +29,20 @@ jobs:
       - name: Aplicar parche V5 y verificar DEX
         run: python3 tools/patch.py original.apk unsigned.apk
 
-      - name: Instalar herramientas de firma
-        run: sdkmanager "build-tools;35.0.0"
+      - name: Localizar e instalar herramientas de firma
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          if [ ! -x "$SDK/build-tools/35.0.0/apksigner" ]; then
+            SDKMANAGER=$(find "$SDK/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)
+            if [ -z "$SDKMANAGER" ]; then
+              echo "No se encontró sdkmanager" >&2
+              exit 1
+            fi
+            printf 'y\n' | "$SDKMANAGER" "build-tools;35.0.0"
+          fi
 
       - name: Alinear, firmar y verificar el APK
         shell: bash
