@@ -56,7 +56,7 @@ def main():
             dst.writestr(info, data)
     with zipfile.ZipFile(output) as z:
         assert z.testzip() is None
-        assert z.read("classes.dex")[:8] == b"dex\\n035\\x00"
+        assert z.read("classes.dex")[:8] == b"dex\n035\x00"
     print(f"APK sin firmar generado: {output}")
 
 if __name__ == "__main__":
