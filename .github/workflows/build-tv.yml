@@ -1,0 +1,103 @@
+name: Quetzalito Sport TV V8 - experimental
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/build-tv.yml
+      - tools/build_tv.py
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  compilar_tv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - name: Obtener repositorio
+        uses: actions/checkout@v4
+
+      - name: Descargar y verificar APK original 6.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 -o original.apk "https://quetzalitotv.vercel.app/Quetzalito%20Sport_6.0.apk"
+          echo "96e0b15ded06eb70ae70d551613b2fcafca85328589954222c222793a64c8259  original.apk" | sha256sum -c -
+
+      - name: Instalar Android y apktool
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          if [ ! -x "$SDK/build-tools/35.0.0/apksigner" ]; then
+            SDKMANAGER=$(find "$SDK/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)
+            printf 'y\n' | "$SDKMANAGER" "build-tools;35.0.0"
+          fi
+          curl -fsSL --retry 3 -o apktool.jar \
+            "https://github.com/iBotPeaches/Apktool/releases/download/v2.12.1/apktool_2.12.1.jar"
+          java -jar apktool.jar --version
+
+      - name: Firmante compatible y transformación Android TV
+        shell: bash
+        run: |
+          set -euo pipefail
+          PASS=$(openssl rand -hex 20)
+          CERT_SHA256=""
+          for i in $(seq 1 100); do
+            rm -f signing.jks
+            keytool -genkeypair -noprompt -keystore signing.jks \
+              -storepass "$PASS" -keypass "$PASS" -alias qsport \
+              -keyalg RSA -keysize 2048 -validity 3650 \
+              -dname "CN=Quetzalito Sport TV experimental" >/dev/null 2>&1
+            CERT_SHA256=$(keytool -exportcert -keystore signing.jks \
+              -storepass "$PASS" -alias qsport | sha256sum | cut -c1-64)
+            if [[ "$CERT_SHA256" == 3* ]]; then
+              echo "Firma compatible en intento $i"
+              break
+            fi
+            CERT_SHA256=""
+          done
+          test -n "$CERT_SHA256"
+          python3 tools/patch.py original.apk patched.apk "$CERT_SHA256"
+          java -jar apktool.jar d -f patched.apk -o decoded
+          python3 tools/build_tv.py decoded
+          java -jar apktool.jar b decoded -o unsigned-tv.apk --use-aapt2
+          TOOLS="${ANDROID_HOME}/build-tools/35.0.0"
+          "$TOOLS/zipalign" -f 4 unsigned-tv.apk aligned-tv.apk
+          "$TOOLS/apksigner" sign --ks signing.jks --ks-key-alias qsport \
+            --ks-pass "pass:$PASS" --key-pass "pass:$PASS" \
+            --v1-signing-enabled true --v2-signing-enabled true \
+            --out QuetzalitoSport_TV_V8_Prueba.apk aligned-tv.apk
+          "$TOOLS/apksigner" verify --verbose --print-certs QuetzalitoSport_TV_V8_Prueba.apk
+          unzip -t QuetzalitoSport_TV_V8_Prueba.apk | tail -1
+          "$TOOLS/aapt2" dump badging QuetzalitoSport_TV_V8_Prueba.apk | grep -E 'package:|sdkVersion|launchable-activity|uses-feature|leanback' | head -30
+          sha256sum QuetzalitoSport_TV_V8_Prueba.apk
+
+      - name: Subir copia RAW a la rama principal
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add QuetzalitoSport_TV_V8_Prueba.apk
+          if ! git diff --staged --quiet; then
+            git commit -m "Publicar APK experimental V8 para Android TV"
+            git push origin HEAD:main
+          fi
+
+      - name: Publicar release TV V8
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view v8-tv-experimental >/dev/null 2>&1; then
+            gh release upload v8-tv-experimental QuetzalitoSport_TV_V8_Prueba.apk --clobber
+          else
+            gh release create v8-tv-experimental QuetzalitoSport_TV_V8_Prueba.apk \
+              --title "Quetzalito Sport TV V8 - TCL y H96 Max (prueba)" \
+              --notes "Android TV experimental: orientación horizontal, 3 columnas, LEANBACK_LAUNCHER y foco con control remoto. Derivada de V7 con bloqueo de omg10.com. No probada físicamente en TCL/H96. La firma es diferente; respalda los datos y desinstala versiones anteriores antes de instalar."
+          fi
