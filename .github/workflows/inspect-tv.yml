@@ -1,0 +1,37 @@
+name: Inspeccionar interfaz para Android TV
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/inspect-tv.yml
+
+permissions:
+  contents: read
+
+jobs:
+  analizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Descargar y examinar APK original
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 -o original.apk "https://quetzalitotv.vercel.app/Quetzalito%20Sport_6.0.apk"
+          echo "96e0b15ded06eb70ae70d551613b2fcafca85328589954222c222793a64c8259  original.apk" | sha256sum -c
+          curl -fsSL --retry 2 -o apktool.jar \
+            "https://github.com/iBotPeaches/Apktool/releases/download/v2.12.1/apktool_2.12.1.jar"
+          java -jar apktool.jar d -f -s original.apk -o decoded
+          echo "===== LAYOUTS ====="
+          find decoded/res -type f -name '*.xml' | grep -E 'layout|navigation' | head -150 || true
+          echo "===== LAYOUTS WITH RECYCLERVIEW OR GRID ====="
+          grep -RnlE 'RecyclerView|GridLayout|android:focusable|android:orientation' decoded/res/layout* 2>/dev/null | head -70 || true
+          echo "===== MAIN LAYOUT PREVIEW ====="
+          for f in $(grep -Rl "RecyclerView" decoded/res/layout* 2>/dev/null | head -5); do
+            echo "===== FILE: $f ====="
+            head -180 "$f"
+          done
+          echo "===== MANIFEST ACTIVITY ====="
+          grep -A15 -B2 'SplashActivity' decoded/AndroidManifest.xml | head -50
