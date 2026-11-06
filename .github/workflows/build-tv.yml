@@ -64,7 +64,7 @@ jobs:
           python3 tools/patch.py original.apk patched.apk "$CERT_SHA256"
           java -jar apktool.jar d -f patched.apk -o decoded
           python3 tools/build_tv.py decoded
-          java -jar apktool.jar b decoded -o unsigned-tv.apk --use-aapt2
+          java -jar apktool.jar b decoded -o unsigned-tv.apk
           TOOLS="${ANDROID_HOME}/build-tools/35.0.0"
           "$TOOLS/zipalign" -f 4 unsigned-tv.apk aligned-tv.apk
           "$TOOLS/apksigner" sign --ks signing.jks --ks-key-alias qsport \
