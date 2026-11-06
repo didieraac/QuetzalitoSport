@@ -1,4 +1,4 @@
-name: Quetzalito Sport V5 - APK experimental
+name: Quetzalito Sport V6 - APK experimental
 
 on:
   push:
@@ -22,14 +22,12 @@ jobs:
       - name: Descargar APK original y comprobar identidad
         shell: bash
         run: |
+          set -euo pipefail
           curl --fail --location --retry 3 --output original.apk \
             "https://quetzalitotv.vercel.app/Quetzalito%20Sport_6.0.apk"
           echo "96e0b15ded06eb70ae70d551613b2fcafca85328589954222c222793a64c8259  original.apk" | sha256sum --check
 
-      - name: Aplicar parche V5 y verificar DEX
-        run: python3 tools/patch.py original.apk unsigned.apk
-
-      - name: Localizar e instalar herramientas de firma
+      - name: Localizar e instalar herramientas Android
         shell: bash
         run: |
           set -euo pipefail
@@ -37,42 +35,54 @@ jobs:
           echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
           if [ ! -x "$SDK/build-tools/35.0.0/apksigner" ]; then
             SDKMANAGER=$(find "$SDK/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)
-            if [ -z "$SDKMANAGER" ]; then
-              echo "No se encontró sdkmanager" >&2
-              exit 1
-            fi
+            [ -n "$SDKMANAGER" ] || { echo "No se encontró sdkmanager"; exit 1; }
             printf 'y\n' | "$SDKMANAGER" "build-tools;35.0.0"
           fi
 
-      - name: Alinear, firmar y verificar el APK
+      - name: Generar firma compatible, parchear DEX y firmar
         shell: bash
         run: |
           set -euo pipefail
           TOOLS="${ANDROID_HOME}/build-tools/35.0.0"
-          "$TOOLS/zipalign" -f 4 unsigned.apk aligned.apk
           PASS=$(openssl rand -hex 20)
-          keytool -genkeypair -noprompt -keystore signing.jks \
-            -storepass "$PASS" -keypass "$PASS" -alias qsport \
-            -keyalg RSA -keysize 3072 -validity 3650 \
-            -dname "CN=Quetzalito Sport experimental"
+          CERT_SHA256=""
+          # El string del hash debe quedar entre "30" y "4" en el DEX:
+          # un SHA-256 que empiece por "3" respeta el orden.
+          for i in $(seq 1 96); do
+            rm -f signing.jks
+            keytool -genkeypair -noprompt -keystore signing.jks \
+              -storepass "$PASS" -keypass "$PASS" -alias qsport \
+              -keyalg RSA -keysize 2048 -validity 3650 \
+              -dname "CN=Quetzalito Sport experimental" >/dev/null 2>&1
+            CERT_SHA256=$(keytool -exportcert -keystore signing.jks \
+              -storepass "$PASS" -alias qsport | sha256sum | cut -c1-64)
+            if [[ "$CERT_SHA256" == 3* ]]; then
+              echo "Certificado y posición de cadena compatibles (intento $i)"
+              break
+            fi
+            CERT_SHA256=""
+          done
+          [ -n "$CERT_SHA256" ] || { echo "No se encontró un certificado compatible"; exit 1; }
+          python3 tools/patch.py original.apk unsigned.apk "$CERT_SHA256"
+          "$TOOLS/zipalign" -f 4 unsigned.apk aligned.apk
           "$TOOLS/apksigner" sign --ks signing.jks --ks-key-alias qsport \
             --ks-pass "pass:$PASS" --key-pass "pass:$PASS" \
             --v1-signing-enabled true --v2-signing-enabled true \
-            --out QuetzalitoSport_V5_Prueba.apk aligned.apk
-          "$TOOLS/apksigner" verify --verbose QuetzalitoSport_V5_Prueba.apk
-          unzip -t QuetzalitoSport_V5_Prueba.apk | tail -1
-          sha256sum QuetzalitoSport_V5_Prueba.apk
+            --out QuetzalitoSport_V6_Prueba.apk aligned.apk
+          "$TOOLS/apksigner" verify --verbose --print-certs QuetzalitoSport_V6_Prueba.apk
+          unzip -t QuetzalitoSport_V6_Prueba.apk | tail -1
+          sha256sum QuetzalitoSport_V6_Prueba.apk
 
-      - name: Publicar descarga directa en Releases
+      - name: Publicar APK V6 en Releases
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if gh release view v5-experimental >/dev/null 2>&1; then
-            gh release upload v5-experimental QuetzalitoSport_V5_Prueba.apk --clobber
+          if gh release view v6-experimental >/dev/null 2>&1; then
+            gh release upload v6-experimental QuetzalitoSport_V6_Prueba.apk --clobber
           else
-            gh release create v5-experimental QuetzalitoSport_V5_Prueba.apk \
-              --title "Quetzalito Sport V5 - prueba experimental" \
-              --notes "APK modificado para probar el bloqueo de omg10.com. Verificado estructuralmente y firmado, pero no probado ejecutándose en un teléfono. Respalda tus datos antes de sustituir la instalación anterior."
+            gh release create v6-experimental QuetzalitoSport_V6_Prueba.apk \
+              --title "Quetzalito Sport V6 - prueba de arranque" \
+              --notes "Se corrige el error Out-of-order string_ids del DEX de la V5; se mantiene la huella de la firma actualizada. Aún requiere prueba real de inicio y canales en Android. Respalda los datos antes de instalar."
           fi
