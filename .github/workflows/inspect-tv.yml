@@ -44,3 +44,19 @@ jobs:
           sed -n '1,180p' decoded/res/layout/item_canal_card.xml
           echo "===== CANAL BUTTON ====="
           sed -n '1,110p' decoded/res/layout/item_canal_btn.xml
+
+          echo "===== ENTRADAS PRINCIPALES ====="
+          for a in SplashActivity WelcomeActivity MainActivity; do
+            f="decoded/smali/com/dhapps/quetzalsport/$a.smali"
+            echo "--- $f ---"
+            if [ -f "$f" ]; then
+              grep -n -A115 -B10 '^.method .*onCreate(' "$f" | head -140 || true
+              grep -n -A30 -B12 'startActivity\\|WelcomeActivity;\\|MainActivity;\\|view_canales' "$f" | head -180 || true
+            fi
+          done
+          echo "===== LLAMADAS A WELCOME Y MAIN ====="
+          grep -Rnl 'Lcom/dhapps/quetzalsport/WelcomeActivity;' decoded/smali/com/dhapps/quetzalsport decoded/smali/n1 | head -30
+          echo "===== WELCOME ACTIVITY UI ====="
+          sed -n '1,135p' decoded/res/layout/activity_welcome.xml
+          echo "===== SPLASH ACTIVITY UI ====="
+          sed -n '1,100p' decoded/res/layout/activity_splash.xml
