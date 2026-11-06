@@ -23,7 +23,7 @@ jobs:
           echo "96e0b15ded06eb70ae70d551613b2fcafca85328589954222c222793a64c8259  original.apk" | sha256sum -c
           curl -fsSL --retry 2 -o apktool.jar \
             "https://github.com/iBotPeaches/Apktool/releases/download/v2.12.1/apktool_2.12.1.jar"
-          java -jar apktool.jar d -f -s original.apk -o decoded
+          java -jar apktool.jar d -f original.apk -o decoded
           echo "===== LAYOUTS ====="
           find decoded/res -type f -name '*.xml' | grep -E 'layout|navigation' | head -150 || true
           echo "===== LAYOUTS WITH RECYCLERVIEW OR GRID ====="
@@ -35,3 +35,12 @@ jobs:
           done
           echo "===== MANIFEST ACTIVITY ====="
           grep -A15 -B2 'SplashActivity' decoded/AndroidManifest.xml | head -50
+          echo "===== SMALI RECYCLER ====="
+          find decoded -path '*/n1/g.smali' -o -path '*/n1/d0.smali' | while read f; do
+            echo "FILE $f"
+            grep -n -C 22 'LinearLayoutManager;-><init>' "$f" | head -230 || true
+          done
+          echo "===== CANAL ITEM ====="
+          sed -n '1,180p' decoded/res/layout/item_canal_card.xml
+          echo "===== CANAL BUTTON ====="
+          sed -n '1,110p' decoded/res/layout/item_canal_btn.xml
