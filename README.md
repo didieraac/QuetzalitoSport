@@ -1,19 +1,17 @@
-# Quetzalito Sport — pruebas de APK sin publicidad
+# Quetzalito Sport — APK experimental
 
-Repositorio independiente para probar modificaciones sobre **Quetzalito Sport 6.0**. No pertenece al proyecto BRENTEC TV.
+Repositorio independiente, sin relación con **BRENTEC TV**.
 
-## Estado
-La compilación V5 es **experimental**: se ha verificado el parche binario y la integridad del DEX, pero **no se ha probado el inicio de la app ni la reproducción en Android**.
+## Versión de prueba actual: V7
+Esta versión intenta abrir **directamente el enlace del canal seleccionado** con el `Intent` original de Android, omitiendo la rutina que abre `omg10.com`. En la V6 se había desactivado ese método completo, lo cual también impedía abrir los canales.
 
-## Descargar
-Cuando la automatización termine correctamente, el APK aparecerá en **Releases** de este repositorio. La primera publicación prevista se llama `QuetzalitoSport_V5_Prueba.apk`.
+**Descarga directa (RAW):** https://raw.githubusercontent.com/didieraac/QuetzalitoSport/main/QuetzalitoSport_V7_Prueba.apk
 
-## Procedimiento
-1. GitHub Actions descarga el APK de la página del desarrollador.
-2. Verifica que su huella SHA-256 coincida con el original analizado.
-3. Aplica un parche específico contra la apertura del anuncio `omg10.com`.
-4. Firma y verifica el APK, luego lo publica en Releases.
+**GitHub Releases:** https://github.com/didieraac/QuetzalitoSport/releases/tag/v7-experimental
 
-La firma digital del APK modificado es diferente a la del original; respalda los datos de la aplicación antes de reemplazarla.
+## Validación
+La compilación V7 superó la validación de identidad del APK original, la integridad del DEX, el alineamiento y la comprobación de firmas. **La reproducción y el inicio siguen pendientes de prueba real en Android**.
 
-**No introduzcas contraseñas ni datos personales en esta app modificada.**
+Si tienes instalada una versión anterior, respalda los datos antes de desinstalarla: cada compilación utiliza una firma diferente. Esta es una modificación de prueba de un APK de terceros; no introduzcas datos personales ni credenciales.
+
+Las versiones V5 y V6 anteriores se conservan como referencia de pruebas fallidas.
