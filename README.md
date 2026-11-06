@@ -1,24 +1,24 @@
-# Quetzalito Sport — versiones de prueba independientes
+# Quetzalito Sport — versiones de prueba
 
-Este repositorio es exclusivo de **Quetzalito Sport**. No modifica **BRENTEC TV**.
+Repositorio exclusivo de **Quetzalito Sport**, independiente de BRENTEC TV.
 
-## Para Android TV / TV Box — V8 experimental
+## Android TV y TV Box — V9 (experimental)
 
-- <https://raw.githubusercontent.com/didieraac/QuetzalitoSport/main/QuetzalitoSport_TV_V8_Prueba.apk>
-- [Release V8](https://github.com/didieraac/QuetzalitoSport/releases/tag/v8-tv-experimental)
+**[Descargar V9 para TV / H96 Max (APK)](https://raw.githubusercontent.com/didieraac/QuetzalitoSport/main/QuetzalitoSport_TV_V9_Prueba.apk)**
 
-Cambios: inicio horizontal, aparición en lanzador Android TV, tres columnas de canales, elementos enfocados seleccionables con control remoto y tarjetas mayores. Conserva el parche para omitir la apertura publicitaria de `omg10.com` de la V7.
+- Orientación horizontal y cuadrícula de tres columnas.
+- Compatibilidad con lanzador Android TV y navegación por control remoto.
+- Después del arranque normal, activa automáticamente la acción original **Entrar ahora**, para abrir directamente el menú, sin dejar la portada ocupando la pantalla.
+- Conserva el parche de V7 que evita abrir la página publicitaria `omg10.com`.
 
-**La compilación, firma APK y reconocimiento de la actividad Leanback están verificados. La reproducción y navegación real por control remoto en TCL/H96 aún requieren pruebas.**
+[Ver Release de V9](https://github.com/didieraac/QuetzalitoSport/releases/tag/v9-tv-experimental)
 
-## Para celular — V7 confirmada por el usuario
+**V9 pasó la compilación y la validación de firma. Sigue pendiente probar el funcionamiento real en TCL y H96, incluida la reproducción y el control remoto.**
 
-- <https://raw.githubusercontent.com/didieraac/QuetzalitoSport/main/QuetzalitoSport_V7_Prueba.apk>
-
-La V7 conserva la reproducción de canales y evita abrir la pestaña `omg10.com`. No es necesario reemplazarla en un teléfono que ya funciona.
+## Respaldos
+- [V8 TV (con portada original)](https://raw.githubusercontent.com/didieraac/QuetzalitoSport/main/QuetzalitoSport_TV_V8_Prueba.apk)
+- [V7 celular (reproducción verificada por el usuario)](https://raw.githubusercontent.com/didieraac/QuetzalitoSport/main/QuetzalitoSport_V7_Prueba.apk)
 
 ## Instalación
 
-Las versiones utilizan firmas distintas. Respalda lo que necesites y desinstala la versión anterior de la misma aplicación en el dispositivo antes de instalar una nueva. No introduzcas contraseñas en una versión experimental.
-
-No se proporcionan garantías sobre disponibilidad de canales de terceros ni sobre el funcionamiento de todos los dispositivos.
+Estas versiones tienen firmas digitales diferentes. Si tienes otra versión instalada en el mismo dispositivo, respalda sus datos antes de desinstalarla. No introduzcas credenciales en versiones experimentales.
