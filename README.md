@@ -1,17 +1,24 @@
-# Quetzalito Sport — APK experimental
+# Quetzalito Sport — versiones de prueba independientes
 
-Repositorio independiente, sin relación con **BRENTEC TV**.
+Este repositorio es exclusivo de **Quetzalito Sport**. No modifica **BRENTEC TV**.
 
-## Versión de prueba actual: V7
-Esta versión intenta abrir **directamente el enlace del canal seleccionado** con el `Intent` original de Android, omitiendo la rutina que abre `omg10.com`. En la V6 se había desactivado ese método completo, lo cual también impedía abrir los canales.
+## Para Android TV / TV Box — V8 experimental
 
-**Descarga directa (RAW):** https://raw.githubusercontent.com/didieraac/QuetzalitoSport/main/QuetzalitoSport_V7_Prueba.apk
+- <https://raw.githubusercontent.com/didieraac/QuetzalitoSport/main/QuetzalitoSport_TV_V8_Prueba.apk>
+- [Release V8](https://github.com/didieraac/QuetzalitoSport/releases/tag/v8-tv-experimental)
 
-**GitHub Releases:** https://github.com/didieraac/QuetzalitoSport/releases/tag/v7-experimental
+Cambios: inicio horizontal, aparición en lanzador Android TV, tres columnas de canales, elementos enfocados seleccionables con control remoto y tarjetas mayores. Conserva el parche para omitir la apertura publicitaria de `omg10.com` de la V7.
 
-## Validación
-La compilación V7 superó la validación de identidad del APK original, la integridad del DEX, el alineamiento y la comprobación de firmas. **La reproducción y el inicio siguen pendientes de prueba real en Android**.
+**La compilación, firma APK y reconocimiento de la actividad Leanback están verificados. La reproducción y navegación real por control remoto en TCL/H96 aún requieren pruebas.**
 
-Si tienes instalada una versión anterior, respalda los datos antes de desinstalarla: cada compilación utiliza una firma diferente. Esta es una modificación de prueba de un APK de terceros; no introduzcas datos personales ni credenciales.
+## Para celular — V7 confirmada por el usuario
 
-Las versiones V5 y V6 anteriores se conservan como referencia de pruebas fallidas.
+- <https://raw.githubusercontent.com/didieraac/QuetzalitoSport/main/QuetzalitoSport_V7_Prueba.apk>
+
+La V7 conserva la reproducción de canales y evita abrir la pestaña `omg10.com`. No es necesario reemplazarla en un teléfono que ya funciona.
+
+## Instalación
+
+Las versiones utilizan firmas distintas. Respalda lo que necesites y desinstala la versión anterior de la misma aplicación en el dispositivo antes de instalar una nueva. No introduzcas contraseñas en una versión experimental.
+
+No se proporcionan garantías sobre disponibilidad de canales de terceros ni sobre el funcionamiento de todos los dispositivos.
