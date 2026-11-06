@@ -1,0 +1,69 @@
+name: Quetzalito Sport V5 - APK experimental
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/build-apk.yml
+      - tools/patch.py
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  compilar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Obtener el repositorio
+        uses: actions/checkout@v4
+
+      - name: Descargar APK original y comprobar identidad
+        shell: bash
+        run: |
+          curl --fail --location --retry 3 --output original.apk \
+            "https://quetzalitotv.vercel.app/Quetzalito%20Sport_6.0.apk"
+          echo "96e0b15ded06eb70ae70d551613b2fcafca85328589954222c222793a64c8259  original.apk" | sha256sum --check
+
+      - name: Aplicar parche V5 y verificar DEX
+        run: python3 tools/patch.py original.apk unsigned.apk
+
+      - name: Preparar herramientas de Android
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar herramientas de firma
+        run: sdkmanager "build-tools;35.0.0"
+
+      - name: Alinear, firmar y verificar el APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          TOOLS="${ANDROID_HOME}/build-tools/35.0.0"
+          "$TOOLS/zipalign" -f 4 unsigned.apk aligned.apk
+          PASS=$(openssl rand -hex 20)
+          keytool -genkeypair -noprompt -keystore signing.jks \
+            -storepass "$PASS" -keypass "$PASS" -alias qsport \
+            -keyalg RSA -keysize 3072 -validity 3650 \
+            -dname "CN=Quetzalito Sport experimental"
+          "$TOOLS/apksigner" sign --ks signing.jks --ks-key-alias qsport \
+            --ks-pass "pass:$PASS" --key-pass "pass:$PASS" \
+            --v1-signing-enabled true --v2-signing-enabled true \
+            --out QuetzalitoSport_V5_Prueba.apk aligned.apk
+          "$TOOLS/apksigner" verify --verbose QuetzalitoSport_V5_Prueba.apk
+          unzip -t QuetzalitoSport_V5_Prueba.apk | tail -1
+          sha256sum QuetzalitoSport_V5_Prueba.apk
+
+      - name: Publicar descarga directa en Releases
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view v5-experimental >/dev/null 2>&1; then
+            gh release upload v5-experimental QuetzalitoSport_V5_Prueba.apk --clobber
+          else
+            gh release create v5-experimental QuetzalitoSport_V5_Prueba.apk \
+              --title "Quetzalito Sport V5 - prueba experimental" \
+              --notes "APK modificado para probar el bloqueo de omg10.com. Verificado estructuralmente y firmado, pero no probado ejecutándose en un teléfono. Respalda tus datos antes de sustituir la instalación anterior."
+          fi
