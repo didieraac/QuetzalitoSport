@@ -1,0 +1,35 @@
+name: Inspeccionar Pato Player 29 - publicidad restante
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/inspect-pato29-ads.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Descargar, descompilar e inspeccionar
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 2 -o original.apk https://app.patoplayer.com/new/PatoplayerPro29.apk
+          echo "1a63ebb5cd727f2161e225169a16fe82a01c1832220be91d108762ef10f869ed  original.apk" | sha256sum --check
+          curl -fsSL --retry 2 -o apktool.jar "https://github.com/iBotPeaches/Apktool/releases/download/v2.12.1/apktool_2.12.1.jar"
+          java -jar apktool.jar d -f original.apk -o decoded >/dev/null
+          echo "==== PACKAGE AND ACTIVITIES ===="
+          grep -E 'package=|android:name=".*(AdActivity|OverlayActivity|Splash|MainActivity|Pato|Welcome).*"|meta-data.*|android:name="com.google.android.gms.ads.APPLICATION_ID"' decoded/AndroidManifest.xml | head -95
+          echo "==== TOP LEVEL APPLICATION SMALI REFS TO AD ===="
+          grep -RnlE 'Lcom/(google/android/gms/ads|startapp/sdk)/' decoded/smali* --include="*.smali" | grep -v -E '/com/google/android/gms/|/com/startapp/' | head -80 || true
+          echo "==== ADMOB BASE AD VIEW ===="
+          sed -n '/^\.method public final b()V/,/^\.end method/p' decoded/smali_classes2/com/google/android/gms/ads/BaseAdView.smali | head -115
+          echo "==== APPLICATION AD NETWORK CALLS (non sdk) ===="
+          grep -RnE -B4 -A6 'Lcom/google/android/gms/ads/(AdView|BaseAdView|AdActivity|interstitial|admanager|appopen)|Lcom/startapp/sdk/adsbase/StartAppAd|Lcom/startapp/sdk/ads/banner/BannerBase' decoded/smali* --include="*.smali" | grep -v -E '/com/google/android/gms/|/com/startapp/' | head -300 || true
+          echo "==== APP PACKAGE SIGNATURE ===="
+          grep '^<manifest' decoded/AndroidManifest.xml
