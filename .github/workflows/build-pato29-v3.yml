@@ -1,0 +1,100 @@
+name: Pato Player Pro 29 V3 - bloquear anuncios de pantalla completa
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/build-pato29-v3.yml
+      - tools/patoplayer29/patch_v2.py
+      - tools/patoplayer29/patch_v3_smali.py
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  compilar_pato_29_v3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 23
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descargar y verificar APK original
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 -o original.apk \
+            "https://app.patoplayer.com/new/PatoplayerPro29.apk"
+          echo "1a63ebb5cd727f2161e225169a16fe82a01c1832220be91d108762ef10f869ed  original.apk" | sha256sum --check
+
+      - name: Aplicar V2 de base preservando canales
+        shell: bash
+        run: python3 tools/patoplayer29/patch_v2.py original.apk patched_v2.apk
+
+      - name: Preparar apktool y herramientas de firma
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          if [ ! -x "$SDK/build-tools/35.0.0/apksigner" ]; then
+            SDKMANAGER=$(find "$SDK/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)
+            [ -n "$SDKMANAGER" ] || exit 1
+            printf 'y\n' | "$SDKMANAGER" "build-tools;35.0.0"
+          fi
+          curl --fail --location --retry 3 -o apktool.jar \
+            "https://github.com/iBotPeaches/Apktool/releases/download/v2.12.1/apktool_2.12.1.jar"
+
+      - name: Desactivar pantallas publicitarias y reconstruir código
+        shell: bash
+        run: |
+          set -euo pipefail
+          java -jar apktool.jar d -f patched_v2.apk -o decoded
+          python3 tools/patoplayer29/patch_v3_smali.py decoded
+          java -jar apktool.jar b decoded -o unsigned_v3.apk
+
+      - name: Alinear y firmar V3
+        shell: bash
+        run: |
+          set -euo pipefail
+          TOOLS="${ANDROID_HOME}/build-tools/35.0.0"
+          "$TOOLS/zipalign" -f -p 4 unsigned_v3.apk aligned_v3.apk
+          PASS=$(openssl rand -hex 20)
+          keytool -genkeypair -noprompt -keystore signing.jks -storepass "$PASS" -keypass "$PASS" \
+            -alias patoplayer29 -keyalg RSA -keysize 3072 -validity 3650 \
+            -dname "CN=Pato Player 29 V3 experimental"
+          "$TOOLS/apksigner" sign --ks signing.jks --ks-key-alias patoplayer29 \
+            --ks-pass "pass:$PASS" --key-pass "pass:$PASS" \
+            --v1-signing-enabled true --v2-signing-enabled true \
+            --out PatoPlayerPro29_SinAnuncios_V3_Prueba.apk aligned_v3.apk
+          "$TOOLS/apksigner" verify --verbose PatoPlayerPro29_SinAnuncios_V3_Prueba.apk
+          "$TOOLS/zipalign" -c -p 4 PatoPlayerPro29_SinAnuncios_V3_Prueba.apk
+          unzip -t PatoPlayerPro29_SinAnuncios_V3_Prueba.apk | tail -1
+          "$TOOLS/aapt2" dump badging PatoPlayerPro29_SinAnuncios_V3_Prueba.apk | grep -E 'package:|launchable-activity|sdkVersion|native-code' | head -30
+          sha256sum PatoPlayerPro29_SinAnuncios_V3_Prueba.apk
+
+      - name: Publicar enlace RAW
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add PatoPlayerPro29_SinAnuncios_V3_Prueba.apk
+          if ! git diff --staged --quiet; then
+            git commit -m "Publicar V3 experimental de Pato Player 29"
+            git push origin HEAD:main
+          fi
+
+      - name: Crear Release V3
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view patoplayer29-v3 >/dev/null 2>&1; then
+            gh release upload patoplayer29-v3 PatoPlayerPro29_SinAnuncios_V3_Prueba.apk --clobber
+          else
+            gh release create patoplayer29-v3 PatoPlayerPro29_SinAnuncios_V3_Prueba.apk \
+              --title "Pato Player Pro 29 V3 - prueba sin anuncios" \
+              --notes "Bloqueo adicional de anuncios de pantalla completa AdMob y StartApp; requiere prueba real. No reemplaza versiones funcionales. Firma distinta, respalda tus favoritos antes de instalar."
+          fi
