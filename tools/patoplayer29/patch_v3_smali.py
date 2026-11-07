@@ -55,13 +55,18 @@ def main(root):
 
     # Las funciones internas de carga de anuncios App Open / Interstitial
     # reciben void y pueden ser anuladas sin tocar devolución ni UI de la app.
-    for suffix,names in [
-        ("/com/google/android/gms/ads/appopen/AppOpenAd.smali",["b","c"]),
-        ("/com/google/android/gms/ads/interstitial/InterstitialAd.smali",["b"]),
+    for suffix,methods in [
+        ("/com/google/android/gms/ads/appopen/AppOpenAd.smali",[
+            ("b","Landroid/content/Context;Ljava/lang/String;Lcom/google/android/gms/ads/AdRequest;ILcom/google/android/gms/ads/appopen/AppOpenAd$AppOpenAdLoadCallback;"),
+            ("c","Landroid/content/Context;Ljava/lang/String;Lcom/google/android/gms/ads/AdRequest;Lcom/google/android/gms/ads/appopen/AppOpenAd$AppOpenAdLoadCallback;"),
+        ]),
+        ("/com/google/android/gms/ads/interstitial/InterstitialAd.smali",[
+            ("b","Landroid/content/Context;Ljava/lang/String;Lcom/google/android/gms/ads/AdRequest;Lcom/google/android/gms/ads/interstitial/InterstitialAdLoadCallback;"),
+        ]),
     ]:
         f=unique_file(root,suffix)
-        for n in names:
-            replace_method(f,n,"","    .locals 0\n\n    return-void")
+        for name,params in methods:
+            replace_method(f,name,params,"    .locals 0\n\n    return-void")
     print("V3: métodos publicitarios desactivados sin cambiar código del reproductor.")
 
 if __name__=="__main__":
