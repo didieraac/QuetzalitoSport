@@ -1,0 +1,88 @@
+name: Pato Player Pro 29 V2 - entrega APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/build-pato29.yml
+      - tools/patoplayer29/patch_v2.py
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  compilar_pato_29:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descargar versión 29 original y comparar SHA256
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --output pato29_original.apk \
+            "https://app.patoplayer.com/new/PatoplayerPro29.apk"
+          echo "1a63ebb5cd727f2161e225169a16fe82a01c1832220be91d108762ef10f869ed  pato29_original.apk" | sha256sum --check
+
+      - name: Aplicar el parche V2, conservando el reproductor
+        run: python3 tools/patoplayer29/patch_v2.py pato29_original.apk pato29_unsigned.apk
+
+      - name: Localizar herramientas Android
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          if [ ! -x "$SDK/build-tools/35.0.0/apksigner" ]; then
+            SDKMANAGER=$(find "$SDK/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)
+            [ -n "$SDKMANAGER" ] || exit 1
+            printf 'y\n' | "$SDKMANAGER" "build-tools;35.0.0"
+          fi
+
+      - name: Alinear APK y firmar para Android
+        shell: bash
+        run: |
+          set -euo pipefail
+          TOOLS="${ANDROID_HOME}/build-tools/35.0.0"
+          "$TOOLS/zipalign" -f -p 4 pato29_unsigned.apk pato29_aligned.apk
+          PASS=$(openssl rand -hex 20)
+          keytool -genkeypair -noprompt -keystore pato29.jks \
+            -storepass "$PASS" -keypass "$PASS" -alias patoplayer29 \
+            -keyalg RSA -keysize 3072 -validity 3650 \
+            -dname "CN=Pato Player 29 sin anuncios V2 experimental"
+          "$TOOLS/apksigner" sign --ks pato29.jks --ks-key-alias patoplayer29 \
+            --ks-pass "pass:$PASS" --key-pass "pass:$PASS" \
+            --v1-signing-enabled true --v2-signing-enabled true \
+            --out PatoPlayerPro29_SinAnuncios_V2_GitHub.apk pato29_aligned.apk
+          "$TOOLS/apksigner" verify --verbose PatoPlayerPro29_SinAnuncios_V2_GitHub.apk
+          "$TOOLS/zipalign" -c -p 4 PatoPlayerPro29_SinAnuncios_V2_GitHub.apk
+          unzip -t PatoPlayerPro29_SinAnuncios_V2_GitHub.apk | tail -1
+          sha256sum PatoPlayerPro29_SinAnuncios_V2_GitHub.apk
+
+      - name: Publicar descarga directa RAW
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add PatoPlayerPro29_SinAnuncios_V2_GitHub.apk
+          if ! git diff --staged --quiet; then
+            git commit -m "Entregar PatoPlayer 29 V2 experimental (separado de Quetzalito TV)"
+            git push origin HEAD:main
+          fi
+
+      - name: Publicar descarga alternativa en Releases
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view patoplayer29-v2 >/dev/null 2>&1; then
+            gh release upload patoplayer29-v2 PatoPlayerPro29_SinAnuncios_V2_GitHub.apk --clobber
+          else
+            gh release create patoplayer29-v2 PatoPlayerPro29_SinAnuncios_V2_GitHub.apk \
+              --title "Pato Player Pro 29 - V2 experimental" \
+              --notes "Archivo modificado para evitar rutinas de anuncios. No se ha probado su arranque o reproducción en un dispositivo. Firma distinta a la original. Respalda favoritos y configuraciones antes de desinstalar la versión previa."
+          fi
